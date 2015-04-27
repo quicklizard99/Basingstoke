@@ -1,5 +1,5 @@
-CommunityFactory <- function(S, nodes, generator=NicheModelLinks, n=1, 
-                             accept=NULL, energetically.feasible=TRUE, 
+CommunityFactory <- function(S, nodes, generator, n=1, accept=NULL,
+                             energetically.feasible=TRUE, 
                              trace.progress=FALSE, validate=TRUE,
                              properties=NULL, ...) {
     # Returns a collection of artificially generated communities. 

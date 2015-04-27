@@ -1,12 +1,10 @@
 Package: Basingstoke
 Type: Package
 Title: Food-web structural models
-Version: 0.1.0
-Date: 2015-04-15
+Version: 0.1-1
+Date: 2015-04-27
 Author: Lawrence Hudson
 Maintainer: Lawrence Hudson <l.hudson@nhm.ac.uk>
-Description: Food-web structural models.
+Description: Implementations of some published food-web structural models.
 License: GPL-2
-Imports: cheddar
-Suggests: knitr, rmarkdown
-VignetteBuilder: knitr
+Depends: cheddar

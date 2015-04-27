@@ -1,0 +1,352 @@
+\documentclass[11pt]{article}
+\usepackage[top=2cm, bottom=3cm, left=2cm, right=2cm]{geometry} % Page margins
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}            % /eqref
+\usepackage[authoryear,round]{natbib}
+\usepackage{booktabs}           % Some macros to improve tables
+\usepackage{url}
+\usepackage[none]{hyphenat}     % No hyphens
+
+%\VignetteIndexEntry{Food-web structural models}
+%\VignetteKeyword{food web}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\R}{\textsf{R} }
+
+\begin{document}
+
+\sloppy    % Prevent hyphenated words running into margins
+
+\title{Food-web structural models
+       (\Sexpr{packageDescription('Basingstoke', fields='Version')})}
+\author{Lawrence Hudson}
+\date{\Sexpr{packageDescription('Basingstoke', fields='Date')}}
+\maketitle
+
+\tableofcontents
+
+<<echo=FALSE>>=
+options(warn=2)
+
+library(Basingstoke)
+
+# Makes copy-paste much less painful
+options(continue=' ')
+options(width=90)
+options(prompt='> ')
+
+options(SweaveHooks = list(fig=function() par(mgp=c(2.5,1,0), 
+                                              mar=c(4,4,2,1),
+                                              oma=c(0,0,1,0),
+                                              cex.main=0.8)))
+@
+
+\section{Introduction}
+Basingstoke provides implementations of some published food-web structural
+models, allowing artificial ecological communities to be generated
+\textit{in silico}.
+
+\section{Links generator functions}
+Links generator functions takes two mandatory arguments:
+
+\begin{itemize}
+  \item{\code{n} - the number of sets of links to generate}
+  \item{\code{S} - the number of species}
+\end{itemize}
+
+Links generator functions should return a list of \code{n} \code{matrices},
+each of which has with two columns:\code{resource} and\code{consumer}.
+Links generator functions can take as many more arguments as they like.
+Probably the simplest method of assigning trophic links is at random. In
+addition to\code{pool} and\code{n}, the\code{RandomLinks} function takes an
+argument \code{C} - directed connectance (number of links / number of possible
+links).
+So for a pool of ten species and $C=0.15$, \code{RandomLinks} will return
+\code{n} \code{matrices} containing
+$number.of.possible.links * C = 10 * 10 *0.15 = 15$ links.
+<<>>=
+library(Basingstoke)
+
+# A list containing a single matrix of 15 links
+res <- RandomLinks(n=1, S=10, C=0.15)
+res
+
+# A list containing 10 matrices, each of 15 links
+res <- RandomLinks(n=10, S=10, C=0.15)
+length(res)
+sapply(res, nrow)
+res[[1]]
+@
+Basingstoke provides links generator functions that implement the cascade model
+\citep{CohenAndNewman1985ProcRSocB} and niche model
+\citep{WilliamsAndMartinez2000Nature}:
+<<>>=
+cascade <- CascadeModelLinks(n=1, S=10, C=0.15)
+cascade
+
+niche <- NicheModelLinks(n=1, S=10, C=0.15)
+niche
+@
+\code{NicheModelLinks} takes some more arguments:
+\begin{itemize}
+  \item{\code{probabilistic} - if \code{TRUE}, the function uses the
+    probabilistic niche model of \citep{WilliamsEtAl2010PLOSONE}}
+  \item{\code{niche.positions} - species' positions on the niche axis}
+\end{itemize}
+These are illustrated below.
+Basingstoke provides functions that convert between the `lists of links' form
+and the familiar `predation matrix' form:
+<<>>=
+niche.pm <- PMOfLinks(niche, 10)
+niche.pm
+
+all.equal(niche, LinksOfPM(niche.pm))
+@
+
+Links generators can be used on their own. Basingstoke can be combined with the
+Cheddar food-web package.
+
+\section{Generating artificial communities}
+The \code{CommunityFactory} function uses a links generator to create Cheddar
+Communities:
+\begin{itemize}
+  \item{\code{S} - number of nodes in the generated communities; nodes will be
+    named \code{Node 1...Node S}}
+  \item{\code{nodes} - either node names or a data.frame of node properties}
+\end{itemize}
+
+Either \code{S} or \code{nodes} should be provided.
+
+\begin{itemize}
+  \item{\code{generator} - the function used to generate sets of trophic links}
+  \item{\code{n} - number of communities to generate}
+  \item{\code{accept} - either \code{NULL} or a function that takes a community
+    as its only argument and returns a logical; if not \code{NULL} then only
+    communities for which the function returns \code{TRUE} will be returned}
+  \item{\code{energetically.feasible} - if \code{TRUE}, then then only
+    communities that are energetically feasible according to Cheddar's
+    \code{PreyAveragedTrophicLevel} function will be returned}
+  \item{\code{trace.progress} - if \code{TRUE}, then feedback is printed}
+  \item{\code{validate} - if \code{TRUE}, created communities are validated using
+    the checks provided by Cheddar's \code{Community} function}
+  \item{\code{...} - other arguments passed to \code{generator}}
+\end{itemize}
+
+Use the niche model to create $12$ communities containing $25$ species with
+$C \approx 0.15$.
+\begin{center}
+<<fig=TRUE>>=
+communities <- CommunityFactory(S=25, n=12, generator=NicheModelLinks, C=0.15)
+
+# Communities are named 'Artificial community 1'..'Artificial community n'
+names(communities)
+
+# Each has 25 nodes
+sapply(communities, NumberOfNodes)
+
+# Each has a C close to 0.15
+sapply(communities, DirectedConnectance)
+hist(sapply(communities, DirectedConnectance), xlab='C')
+@
+\end{center}
+
+Plot nodes stacked vertically by trophic level
+\begin{center}
+<<fig=TRUE>>=
+# 
+plot(communities, ncol=4)
+@
+\end{center}
+
+At least one community will have a non-zero number of isolated nodes - check
+using Cheddar's IsolatedNodes function
+<<>>=
+sapply(communities, function(c) return(length(IsolatedNodes(c))))
+@
+Let's say our analysis requires that the generated communities have no 
+isolated nodes. We can use the \code{accept} argument together with Cheddar's
+\code{IsIsolatedNode} function to ensure that the communities have no
+isolated nodes.
+<<>>=
+communities <- CommunityFactory(S=25,
+                                n=12,
+                                generator=NicheModelLinks,
+                                C=0.15,
+                                accept=function(c) 0==sum(IsIsolatedNode(c)))
+
+# All zero
+sapply(communities, function(c) return(length(IsolatedNodes(c))))
+@
+
+Guarantee that communities have no isolated nodes and exactly $5$ basal nodes -
+use Cheddar's \code{IsBasalNode} function for this; also get
+\code{CommunityFactory} to trace its progress.
+<<>>=
+communities <- CommunityFactory(S=25,
+                                n=12,
+                                generator=NicheModelLinks,
+                                C=0.15,
+                                accept=function(c) 0==sum(IsIsolatedNode(c)) &&
+                                                   5==sum(IsBasalNode(c)),
+                                trace.progress=TRUE)
+
+# No community has isolated nodes
+all(0==sapply(communities, function(c) return(length(IsolatedNodes(c)))))
+
+# All communities have five basal nodes
+all(5==sapply(communities, function(c) return(length(BasalNodes(c)))))
+@
+
+This design makes it easy to generate artificial communities using different
+structural models.
+
+\section{Artifical communities that are similar to empirical ones}
+Create a single artificial community with randomly assigned trophic links and
+with the same directed connectance as the Tuesday Lake $1984$ dataset with
+isolated nodes removed and nodes ordered by body mass.
+\begin{center}
+\SweaveOpts{width=8,height=4}
+\setkeys{Gin}{width=\textwidth}
+<<fig=TRUE>>=
+data(TL84)
+TL84 <- RemoveIsolatedNodes(OrderCommunity(TL84, 'M'), title='Tuesday Lake 1984')
+random <- CommunityFactory(generator=RandomLinks,
+                           C=DirectedConnectance(TL84),
+                           nodes=NPS(TL84),
+                           properties=CPS(TL84))
+par(mfrow=c(1,2))
+PlotPredationMatrix(TL84)
+PlotPredationMatrix(random[[1]])
+@
+\end{center}
+
+Points in the right-hand plot are black because \code{CommunityFactory} removes
+the \code{category} column of the \code{nodes} \code{data.frame} because it is
+illegal to create a Chedar \code{Community} object with nodes that have a
+category of producer and that have trophic resources - something that will
+almost certainly happen with any  trophic links generator.
+
+Another one using the niche model.
+\SweaveOpts{width=8,height=4}
+\setkeys{Gin}{width=\textwidth}
+\begin{center}
+<<fig=TRUE>>=
+niche <- CommunityFactory(generator=NicheModelLinks,
+                          C=DirectedConnectance(TL84),
+                          nodes=NPS(TL84),
+                          properties=CPS(TL84))
+par(mfrow=c(1,2))
+PlotPredationMatrix(TL84)
+PlotPredationMatrix(niche[[1]])
+@
+\end{center}
+
+We can easily create $100$ niche-model communities with a $C$ similar to
+\code{TL84}:
+\SweaveOpts{width=6,height=6}
+\setkeys{Gin}{width=0.5\textwidth}
+<<>>=
+niche <- CommunityFactory(generator=NicheModelLinks,
+                          C=DirectedConnectance(TL84),
+                          n=100,
+                          nodes=NPS(TL84),
+                          properties=CPS(TL84))
+length(niche)
+@
+
+Have a look at the directed connectances of all $100$ communities.
+\begin{center}
+<<fig=TRUE>>=
+C <- sapply(niche, DirectedConnectance)
+hist(C)
+
+# TL84's C - solid line
+abline(v=DirectedConnectance(TL84), col=2)
+
+# Mean C of generated communities - dashed line
+abline(v=mean(C), lty=2)
+@
+\end{center}
+
+Have a look at the trophic levels of all $100$ communities.
+\begin{center}
+<<fig=TRUE>>=
+# A list of 100 vectors of length 56
+tl <- lapply(niche, PreyAveragedTrophicLevel)
+
+# The mean trophic level of each community
+tl <- sapply(tl, mean)
+
+hist(tl, xlim=range(1, range(tl)))
+
+# Mean trophic level of TL84 - solid line
+abline(v=mean(PreyAveragedTrophicLevel(TL84)), col=2)
+
+# Mean of mean trophic level of generated communities - dashed line
+abline(v=mean(tl), lty=2)
+@
+\end{center}
+
+\section{Visual comparison of the different types of structural models}
+\begin{center}
+\SweaveOpts{width=8,height=8}
+\setkeys{Gin}{width=\textwidth}
+<<fig=TRUE>>=
+# A helper function to make the comparisons easier
+Artificial <- function(original, main, ...) {
+    artificial <- CommunityFactory(nodes=NPS(original),
+                                   C=DirectedConnectance(original),
+                                   properties=CPS(original),
+                                   n=1,
+                                   ...)[[1]]
+    PlotPredationMatrix(artificial, main=paste0(main, ', C=',
+        sprintf('%.4f', DirectedConnectance(artificial))))
+    return (invisible(artificial))
+}
+
+par(mfrow=c(2,2))
+PlotPredationMatrix(TL84,
+                    main=paste0('Original, C=',
+                                sprintf('%.4f', DirectedConnectance(TL84))))
+Artificial(TL84, generator=RandomLinks, main='Random')
+Artificial(TL84, generator=CascadeModelLinks, main='Cacade')
+Artificial(TL84, generator=NicheModelLinks, main='Niche')
+@
+\end{center}
+
+The \code{NicheModelLinks} function has some more flexibility. First, we can
+specify species' positions on the niche axis, which takes values between $0$ and
+$1$. Second, it can generate links using the probabilistic niche model, which
+allows gaps in consumers' diets - seen in the bottom two plots.
+\SweaveOpts{width=8,height=8}
+\setkeys{Gin}{width=\textwidth}
+\begin{center}
+<<fig=TRUE>>=
+par(mfrow=c(2,2))
+PlotPredationMatrix(TL84,
+                    main=paste0('Original, C=',
+                                sprintf('%.4f', DirectedConnectance(TL84))))
+niche.positions <- order(NP(TL84, 'M'))/NumberOfNodes(TL84)
+Artificial(TL84, generator=NicheModelLinks,
+           main='Niche,\ncentres are order of M',
+           niche.positions=niche.positions)
+
+Artificial(TL84, generator=NicheModelLinks,
+           main='Probabilistic niche,\ncentres are order of M',
+           niche.positions=niche.positions, probabilistic=TRUE)
+
+# The allometric niche model is the probabilistic niche model with niche
+# positions computed from log-transformed body masses scaled to be between 0
+# and 1 (Williams et al 2010 PLoS ONE)
+logM <- Log10M(TL84)
+niche.positions <- (logM-min(logM)) / diff(range(logM))
+Artificial(TL84, generator=NicheModelLinks,
+           main='Probabilistic niche,\ncentres are normalised log M',
+           niche.positions=niche.positions, probabilistic=TRUE)
+@
+\end{center}
+
+\bibliographystyle{plainnat}
+\bibliography{basingstoke}
+
+\end{document}

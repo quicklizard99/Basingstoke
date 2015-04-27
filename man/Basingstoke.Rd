@@ -1,26 +1,34 @@
-\name{Basingstoke}
-\alias{Basingstoke}
+\name{Basingstoke-package}
 \alias{Basingstoke-package}
+\alias{Basingstoke}
 \docType{package}
-\title{Food-web structural models}
+\title{
+    \packageTitle{Basingstoke}
+}
+
 \description{
-Food-web structural models
+    \packageDescription{Basingstoke}
 }
+
 \details{
-\tabular{ll}{
-    Package: \tab Basingstoke\cr
-    Type: \tab Package\cr
-    Version: \tab 0.1.0\cr
-    Date: \tab 2015-04-15\cr
-    License: \tab BSD 2 clause\cr
-}
+    \packageDESCRIPTION{Basingstoke}
+    \packageIndices{Basingstoke}
 }
 
-\author{Maintainer: Lawrence Hudson <l.hudson@nhm.ac.uk}
+\author{
+    \packageAuthor{Basingstoke}
+    Maintainer: \packageMaintainer{Basingstoke}
+}
 
-% \references{}
+\keyword{package}
 
-\keyword{ package }
+\examples{
+# A list containing 10 matrices each of 15 links
+links <- RandomLinks(n=10, S=10, C=0.15)
 
-% \examples{
-% }
+# A list containing 10 matrices each of around 15 links
+cascade <- CascadeModelLinks(n=10, S=10, C=0.15)
+
+# A list containing 10 matrices each of around 15 links
+niche <- NicheModelLinks(n=10, S=10, C=0.15)
+}
