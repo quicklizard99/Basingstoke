@@ -2,7 +2,7 @@ Package: Basingstoke
 Type: Package
 Title: Food-web structural models
 Version: 0.1-1
-Date: 2015-04-27
+Date: 2015-04-29
 Author: Lawrence Hudson
 Maintainer: Lawrence Hudson <l.hudson@nhm.ac.uk>
 Description: Implementations of some published food-web structural models.
