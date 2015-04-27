@@ -29,7 +29,7 @@ Artificial(TL84, generator=CascadeModelLinks, main='Cacade')
 Artificial(TL84, generator=NicheModelLinks, main='Niche')
 ```
 
-![Example artificial communities](../screenshots/doughnut1.png?raw=true)
+![Example artificial communities](../screenshots/example1.png?raw=true)
 
 The `NicheModelLinks` function has some more flexibility. First, we can specify
 species' positions on the niche axis, which takes values between 0 and 1.
@@ -58,3 +58,5 @@ Artificial(TL84, generator=NicheModelLinks,
     main='Probabilistic niche,\ncentres are normalised log M',
     niche.positions=niche.positions, probabilistic=TRUE)
 ```
+
+![Example artificial communities](../screenshots/example2.png?raw=true)
