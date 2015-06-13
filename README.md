@@ -1,4 +1,8 @@
 # Basingstoke - food-web structural models in R
+
+[![Travis status](https://travis-ci.org/quicklizard99/Basingstoke.svg?branch=master)](https://travis-ci.org/quicklizard99/Basingstoke)
+[![Coverage Status](https://coveralls.io/repos/quicklizard99/Basingstoke/badge.svg)](https://coveralls.io/r/quicklizard99/Basingstoke)
+
 Basingstoke provides implementations of some published food-web structural
 models, allowing artificial ecological communities to be generated *in silico*.
 
